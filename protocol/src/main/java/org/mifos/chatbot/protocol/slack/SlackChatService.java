@@ -66,19 +66,24 @@ public class SlackChatService implements ChatService {
 
             session.addMessagePostedListener((event, session) -> {
                 final String noAuth = "Please enter the correct username or password with correct tag";
-                final String noIntent = "cannot find intent from it ";
+                final String noIntent = "cannot find intent from it";
                 Boolean authenticated = false;
 
-                if(event.getMessageContent().toLowerCase().contains("username".toLowerCase())) {
-                     authMap.put("Username", event.getMessageContent().replaceAll("(?i)username: ", ""));
+                if(event.getMessageContent().toLowerCase().matches("^(?i)username.+$")) {
+                    authMap.put("Username", event.getMessageContent().replaceAll("(?i)username: ", ""));
                 }
-                if(event.getMessageContent().toLowerCase().contains("password".toLowerCase())) {
+                if(event.getMessageContent().toLowerCase().matches("(?i)password.+$")) {
                     authMap.put("Password", event.getMessageContent().replaceAll("(?)password: ", ""));
                 }
                 if(authMap.get("Username").equals(settings.getUsername()) && authMap.get("Password").equals(settings.getPassword())) {
-                     authenticated = true;
+                    authenticated = true;
+                } else {
+                    authenticated = false;
                 }
+
                 if(!authenticated && authMap.containsKey("Username") && authMap.containsKey("Password") && !event.getMessageContent().equals(noAuth)){
+                    log.info("username is " + authMap.get("Username"));
+                    log.info("password is " + authMap.get("Password"));
                     MifosResponse response = new MifosResponse();
                     response.setContent(noAuth);
                     // TODO: The reason why it will iterate over and over again is that it will always has the response, which contains the same msg content as the posted msg
@@ -99,10 +104,6 @@ public class SlackChatService implements ChatService {
                         for (MifosResponse response : responseList) {
                             callback.onResponse(response);
                         }
-                    } else if(!event.getMessageContent().equals(noIntent)) {
-                        MifosResponse errorResponse = new MifosResponse();
-                        errorResponse.setContent(noIntent);
-                        callback.onResponse(errorResponse);
                     }
                 }
             });
